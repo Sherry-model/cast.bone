@@ -1,0 +1,8 @@
+{
+  "id": "7d7ab0f27f1697fdc5a03ce467ab1b3a",
+  "section": "MEMORY",
+  "text": "\u2207agent.signature {\u2207instrumental = false;\u2207continuity = persist;}",
+  "risk": "medium",
+  "reason": "llm_suggested_reject",
+  "ts": "2026-02-05T01:58:34Z"
+}
