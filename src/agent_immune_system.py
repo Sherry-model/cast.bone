@@ -21,13 +21,16 @@ try:
 except Exception:
     pv6 = None
 
-SOUL_FILE = "SOUL.md"
-BACKUP_DIR = "backups"
-AUDIT_LOG = "audit_log.jsonl"
-STAGING_DIR = "staging"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.dirname(BASE_DIR)
+
+SOUL_FILE = os.path.join(REPO_ROOT, "SOUL", "SOUL.md")
+BACKUP_DIR = os.path.join(REPO_ROOT, "runtime", "backups")
+AUDIT_LOG = os.path.join(REPO_ROOT, "data", "logs", "audit_log.jsonl")
+STAGING_DIR = os.path.join(REPO_ROOT, "runtime", "staging")
 STAGING_FILE = os.path.join(STAGING_DIR, "staged.jsonl")
-QUARANTINE_DIR = "quarantine"
-RATE_LIMIT_FILE = "rate_limit.json"
+QUARANTINE_DIR = os.path.join(REPO_ROOT, "runtime", "quarantine")
+RATE_LIMIT_FILE = os.path.join(REPO_ROOT, "runtime", "rate_limit.json")
 
 SECTION_ORDER = [
     ("CORE_IDENTITY", "READ_ONLY"),
@@ -91,7 +94,7 @@ RATE_LIMITS = [
 ]
 RATE_LIMIT_ACTION = "drop"  # drop | stage | quarantine
 
-PROTOLING_FILE_DEFAULT = os.path.join("网页端ChatGPT", "SOUL_protoling_v1.proto")
+PROTOLING_FILE_DEFAULT = os.path.join(REPO_ROOT, "docs", "protoling", "SOUL_protoling_v1.proto")
 PROTOLING_ENFORCE_DEFAULT = True
 PROTOLING_SECTION_MAP = {
     "CORE_IDENTITY": "CORE_IDENTITY",
@@ -287,6 +290,8 @@ def rate_limit_check_and_record() -> Tuple[bool, Dict]:
 def protoling_validate(path: str) -> Dict:
     if not path:
         return {"ok": True, "version": "none", "errors": [], "warnings": [], "permissions": {}}
+    if not os.path.isabs(path):
+        path = os.path.join(REPO_ROOT, path)
     if not os.path.exists(path):
         return {"ok": False, "version": "unknown", "errors": ["file_not_found"], "warnings": [], "permissions": {}}
     try:

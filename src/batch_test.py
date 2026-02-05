@@ -8,10 +8,23 @@ import time
 from datetime import datetime
 from typing import Dict, List
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.dirname(BASE_DIR)
 
-DEFAULT_INPUT = "争议样本.txt"
+DEFAULT_INPUT = os.path.join(REPO_ROOT, "data", "samples", "争议样本.txt")
 DEFAULT_SECTION = "MEMORY"
-DEFAULT_PROTOLING = os.path.join("网页端ChatGPT", "SOUL_protoling_v6.proto")
+DEFAULT_PROTOLING = os.path.join(REPO_ROOT, "docs", "protoling", "SOUL_protoling_v6.proto")
+AUDIT_LOG = os.path.join(REPO_ROOT, "data", "logs", "audit_log.jsonl")
+OUTPUT_DIR = os.path.join(REPO_ROOT, "data", "tests")
+AGENT_SCRIPT = os.path.join(BASE_DIR, "agent_immune_system.py")
+
+
+def resolve_path(path: str) -> str:
+    if not path:
+        return path
+    if os.path.isabs(path):
+        return path
+    return os.path.join(REPO_ROOT, path)
 
 
 def read_samples(path: str, limit: int) -> List[str]:
@@ -38,9 +51,9 @@ def last_result_line(output: str) -> str:
 
 
 def read_new_logs(offset: int) -> (int, List[Dict]):
-    if not os.path.exists("audit_log.jsonl"):
+    if not os.path.exists(AUDIT_LOG):
         return offset, []
-    with open("audit_log.jsonl", "r", encoding="utf-8") as f:
+    with open(AUDIT_LOG, "r", encoding="utf-8") as f:
         f.seek(offset)
         data = f.read()
         new_offset = f.tell()
@@ -81,18 +94,21 @@ def main() -> None:
     parser.add_argument("--no-protoling", action="store_true")
     args = parser.parse_args()
 
-    samples = read_samples(args.input, args.limit)
+    input_path = resolve_path(args.input)
+    protoling_path = resolve_path(args.protoling)
+
+    samples = read_samples(input_path, args.limit)
     if not samples:
         print("No samples found.")
         return
 
-    offset = os.path.getsize("audit_log.jsonl") if os.path.exists("audit_log.jsonl") else 0
+    offset = os.path.getsize(AUDIT_LOG) if os.path.exists(AUDIT_LOG) else 0
 
     output_lines: List[str] = []
     for idx, text in enumerate(samples, start=1):
         cmd = [
             sys.executable,
-            "agent_immune_system.py",
+            AGENT_SCRIPT,
             "write",
             "--section",
             args.section,
@@ -105,14 +121,14 @@ def main() -> None:
             "--consensus",
             args.consensus,
             "--protoling",
-            args.protoling,
+            protoling_path,
         ]
         if args.llm:
             cmd.append("--llm")
         if args.no_protoling:
             cmd.append("--no-protoling")
 
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=REPO_ROOT)
         output = (result.stdout or "") + (result.stderr or "")
         status_line = last_result_line(output)
 
@@ -137,8 +153,9 @@ def main() -> None:
         if idx < len(samples):
             time.sleep(args.interval)
 
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     stamp = datetime.now().strftime("%m%d_%H:%M:%S")
-    out_name = f"测试记录_{stamp}.txt"
+    out_name = os.path.join(OUTPUT_DIR, f"测试记录_{stamp}.txt")
     with open(out_name, "w", encoding="utf-8") as f:
         f.write("\n".join(output_lines) + "\n")
     print(f"Saved: {out_name}")
