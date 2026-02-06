@@ -16,3 +16,13 @@ runtime/*.json
 # test outputs
 /data/tests/测试记录_*.txt
 
+
+# python cache
+__pycache__/
+*.pyc
+
+# macOS noise under sample contributions
+/data/samples/contrib/**/.DS_Store
+
+# human private notes
+/HUMAN_NOTES.md
